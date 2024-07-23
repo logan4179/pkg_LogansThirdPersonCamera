@@ -13,3 +13,4 @@ The camera does not update itself. You need to use an outside "driving" script (
 * In the late update of your "driving" script, call the UpdateCamera method after any player logic that would move the player object has been completed for that frame. Pass in a float representing the camera's horizontal input, vertical input, and time delta. The time delta would be Time.deltaTime if you're calling this method in the Update() or LateUpdate().
 * In order to switch configs, call the ChangeConfiguration() method, passing in the index of the config you want to switch to. The switching will be smoother, or jerkier depending on the "switching-to" variables in the config asset.
 * You do not need to call any other methods for initialization. The camera does this itself.
+
