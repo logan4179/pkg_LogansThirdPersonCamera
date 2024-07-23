@@ -1,0 +1,14 @@
+{
+  "name": "com.loganland.logansthirdpersoncamera",
+  "version": "1.0.0",
+  "displayName": "Logans Third Person Camera",
+  "description": "Third Person Camera System.",
+  "documentationUrl": "https://example.com/",
+  "changelogUrl": "https://example.com/changelog.html",
+  "licensesUrl": "https://example.com/licensing.html",
+  "author": {
+    "name": "Logan Jarrett",
+    "email": "unity@example.com",
+    "url": "https://www.unity3d.com"
+  }
+}
