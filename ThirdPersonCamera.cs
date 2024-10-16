@@ -21,10 +21,15 @@ namespace LogansThirdPersonCamera
         //[Header("CALCULATED VALUES-----------------------")]
 		/// <summary>A vector with only a y and z value (x is 0), that expresses a planar (Y-Z) positioning for the camera at it's max height that can then be rotated around the player to produce an arbitrary X-value.</summary>
 		private Vector3 v_RotMax;
+        /// <summary>A vector with only a y and z value (x is 0), that expresses a planar (Y-Z) positioning for the camera at it's max height that can then be rotated around the player to produce an arbitrary X-value.</summary>
+        public Vector3 V_RotMax => v_RotMax;
 		/// <summary>A vector with only a y and z value (x is 0), that expresses a planar (Y-Z) positioning for the camera at it's min height that can then be rotated around the player to produce an arbitrary X-value.</summary>
 		private Vector3 v_RotMin;
-		/// <summary>Because this value gets lerped when changing configs, this holds the calculated (lerped) value.</summary>
-		private float calculatedSideOffset;
+        /// <summary>A vector with only a y and z value (x is 0), that expresses a planar (Y-Z) positioning for the camera at it's min height that can then be rotated around the player to produce an arbitrary X-value.</summary>
+        public Vector3 V_RotMin => v_RotMin;
+
+        /// <summary>Because this value gets lerped when changing configs, this holds the calculated (lerped) value.</summary>
+        private float calculatedSideOffset;
 		/// <summary>Because this value gets lerped when changing configs, this holds the calculated (lerped) value.</summary>
 		private float calculatedFollowDistance = 0f;
 		/// <summary>This vector gets orbited to describe the correct rotational orbit that the camera should have. Gets added on top of the player's position and the 'origin anchor' vector.</summary>
