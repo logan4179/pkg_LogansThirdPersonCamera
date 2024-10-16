@@ -69,9 +69,10 @@ namespace LogansThirdPersonCamera
 		{
 			CheckIfKosher();
 
+			InitializeCameraValues();
+
 			if( FollowTransform != null )
 			{
-				InitializeCameraValues();
 				PlaceCameraAtDefaultPositionAndOrientation();
 			}
 		}
