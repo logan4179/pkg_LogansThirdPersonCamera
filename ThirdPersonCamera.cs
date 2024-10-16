@@ -7,15 +7,15 @@ namespace LogansThirdPersonCamera
 	{
 		[Header("--------------[[ CONFIGS ]]----------------")]
 		public LTPCconfig[] MyConfigurations;
-		public int CurrentConfigIndex = 0;
+		[HideInInspector] public int CurrentConfigIndex = 0;
 
 		//[Header("---------------[[ REFERENCE (INTERNAL) ]]-----------------")]
-		private Transform Trans;
-		protected Camera cam;
+		private Transform _trans;
+		protected Camera _cam;
 
 		[Header("---------------[[ REFERENCE (EXTERNAL) ]]-----------------")]
 		[Tooltip("Transform belonging to the entity (usually the player) that the camera is supposed to follow")]
-		public Transform followTransform = null;
+		public Transform FollowTransform = null;
 
 
         //[Header("CALCULATED VALUES-----------------------")]
@@ -34,7 +34,8 @@ namespace LogansThirdPersonCamera
 
 		private float calculatedDistToLookInFrontOfPlayer = 0f;
 
-		[Header("-------------[[ DEBUG ]]---------------")]
+
+        [Header("-------------[[ DEBUG ]]---------------")]
 		public bool DrawDebugGizmos = false;
 
 		/// <summary>Uses the pythagorean theorem to recalculate the vRotMax vector. Mainly gets called indirectly through the property 'Prop_MaxVertTilt', which itself gets called indirectly when the designer changes it's value in the inspector via the camera's inspector script.</summary>
@@ -55,15 +56,19 @@ namespace LogansThirdPersonCamera
 
 		void Awake()
 		{
-			Trans = GetComponent<Transform>();
-			cam = GetComponent<Camera>();
+			_trans = GetComponent<Transform>();
+			_cam = GetComponent<Camera>();
 		}
 
 		void Start()
 		{
 			CheckIfKosher();
 
-			InitializeCamera();
+			if( FollowTransform != null )
+			{
+				InitializeCameraValues();
+				PlaceCameraAtDefaultPositionAndOrientation();
+			}
 		}
 
 		/// <summary>
@@ -74,8 +79,8 @@ namespace LogansThirdPersonCamera
 		public void UpdateCamera( float hAxis, float vAxis, float timeDelta )
 		{
 			#region Calculate Lerped FOV ------------------------
-			cam.fieldOfView = Mathf.Lerp(
-				cam.fieldOfView, MyConfigurations[CurrentConfigIndex].FOVgoal, MyConfigurations[CurrentConfigIndex].Speed_lerpToFOVgoal * timeDelta
+			_cam.fieldOfView = Mathf.Lerp(
+				_cam.fieldOfView, MyConfigurations[CurrentConfigIndex].FOVgoal, MyConfigurations[CurrentConfigIndex].Speed_lerpToFOVgoal * timeDelta
 			);
 
 			calculatedSideOffset = Mathf.Lerp(
@@ -112,17 +117,17 @@ namespace LogansThirdPersonCamera
 				vPos_cameraOrbit_calculated = v_RotMin;
 			}
 
-			Trans.position = Vector3.Lerp( Trans.position, CalculatedCameraPositionGoal(), MyConfigurations[CurrentConfigIndex].Speed_Move * timeDelta );
-			Trans.LookAt( CalculatedLookGoal() );
+			_trans.position = Vector3.Lerp( _trans.position, CalculatedCameraPositionGoal(), MyConfigurations[CurrentConfigIndex].Speed_Move * timeDelta );
+			_trans.LookAt( CalculatedLookGoal() );
 		}
 
 		/// <summary>Efficiency boolean that tells our script if the last frame had clipping or not./summary>
 		bool intersectedOnLastFrame;
 		protected Vector3 CalculatedCameraPositionGoal()
 		{
-			Vector3 vOrigin = followTransform.TransformPoint( v_camOriginAnchorPt_calculated );
+			Vector3 vOrigin = FollowTransform.TransformPoint( v_camOriginAnchorPt_calculated );
 
-			Vector3 calculatedGoal = followTransform.TransformPoint(
+			Vector3 calculatedGoal = FollowTransform.TransformPoint(
 				v_camOriginAnchorPt_calculated +
 				(vPos_cameraOrbit_calculated.normalized * calculatedFollowDistance) +
 				(Vector3.right * calculatedSideOffset) +
@@ -138,14 +143,14 @@ namespace LogansThirdPersonCamera
 					calculatedGoal = vOrigin + (Vector3.Normalize(calculatedGoal - vOrigin) * Vector3.Distance(vOrigin, hitInfo.point));
 
 					clipValue = Mathf.Lerp(0.15f, 0.3f, (calculatedGoal - vOrigin).magnitude / 0.86728f);
-					cam.nearClipPlane = clipValue;
+					_cam.nearClipPlane = clipValue;
 					intersectedOnLastFrame = true;
 				}
 				else //If there's no clipping this frame...
 				{
 					if (intersectedOnLastFrame) //...and there was clipping last frame - therefore a change in state has occurred...
 					{
-						cam.nearClipPlane = 0.3f;
+						_cam.nearClipPlane = 0.3f;
 					}
 					intersectedOnLastFrame = false;
 				}
@@ -157,17 +162,32 @@ namespace LogansThirdPersonCamera
 
 		protected Vector3 CalculatedLookGoal()
 		{
-			return followTransform.TransformPoint(
+			return FollowTransform.TransformPoint(
 				v_camOriginAnchorPt_calculated +
 				(-vPos_cameraOrbit_calculated.normalized * calculatedDistToLookInFrontOfPlayer)
 			);
 		}
 
+		/// <summary>
+		/// Calculates values such as such as the max/min rotational values based on the settings.
+		/// </summary>
 		[ContextMenu("call InitializeCamera()")]
-		public void InitializeCamera()
+		public void InitializeCameraValues()
 		{
 			Update_vRotMax();
 			Update_vRotMin();
+		}
+
+		/// <summary>
+		/// Places camera at default start location and rotation. Only call this when you have the followTransform set.
+		/// </summary>
+		public void PlaceCameraAtDefaultPositionAndOrientation()
+		{
+			if( FollowTransform == null )
+			{
+				Debug.LogError( $"LTPC ERROR! Cannot place camera at default position/orientation if the follow transform reference is null. Returning early..." );
+				return;
+			}
 
 			calculatedFollowDistance = MyConfigurations[CurrentConfigIndex].Dist_follow;
 			calculatedSideOffset = MyConfigurations[CurrentConfigIndex].sideOffsetAmt;
@@ -215,7 +235,7 @@ namespace LogansThirdPersonCamera
 				return;
 			}
 
-			Vector3 v = followTransform.TransformPoint( MyConfigurations[CurrentConfigIndex].OriginAnchorPoint );
+			Vector3 v = FollowTransform.TransformPoint( MyConfigurations[CurrentConfigIndex].OriginAnchorPoint );
 			Gizmos.color = Color.green;
 			Gizmos.DrawWireSphere(v, 0.1f);
 			//Handles.DrawLine( v, v + Vector3.up * 0.5f, 0.5f );
@@ -226,7 +246,7 @@ namespace LogansThirdPersonCamera
 			Gizmos.color = Color.yellow;
 			Gizmos.DrawWireSphere(v, 0.2f);
 			Handles.DrawDottedLine(v, v + Vector3.up * 1f, 0.5f);
-			Handles.DrawLine( followTransform.TransformPoint(MyConfigurations[CurrentConfigIndex].OriginAnchorPoint), v );
+			Handles.DrawLine( FollowTransform.TransformPoint(MyConfigurations[CurrentConfigIndex].OriginAnchorPoint), v );
 			Handles.Label(v + Vector3.up * 1f, "Look Goal");
 
 			v = CalculatedCameraPositionGoal();
@@ -245,18 +265,6 @@ namespace LogansThirdPersonCamera
 			if ( MyConfigurations == null )
 			{
 				Debug.LogError($"{nameof(ThirdPersonCamera)}.{nameof(MyConfigurations)} reference was null.");
-				amKosher = false;
-			}
-
-			if ( cam == null )
-			{
-				Debug.LogError($"{nameof(ThirdPersonCamera)}.{nameof(cam)} reference was null.");
-				amKosher = false;
-			}
-
-			if ( followTransform == null )
-			{
-				Debug.LogError($"{nameof(ThirdPersonCamera)}.{nameof(followTransform)} reference was null.");
 				amKosher = false;
 			}
 
