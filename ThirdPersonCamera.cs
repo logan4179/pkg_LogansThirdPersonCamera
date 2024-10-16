@@ -17,10 +17,16 @@ namespace LogansThirdPersonCamera
 		[Tooltip("Transform belonging to the entity (usually the player) that the camera is supposed to follow")]
 		public Transform FollowTransform = null;
 
+		//[Header("CACHED VALUES-----------------------")]
+		/// <summary>
+		/// The distance that the camera should follow away from the target. The camera sets this to the current configuration's follow distance on Start(), but you can use this to change the follow distance after start().
+		/// </summary>
+		public float CachedFollowDist = 1f;
+
 
         //[Header("CALCULATED VALUES-----------------------")]
-		/// <summary>A vector with only a y and z value (x is 0), that expresses a planar (Y-Z) positioning for the camera at it's max height that can then be rotated around the player to produce an arbitrary X-value.</summary>
-		private Vector3 v_RotMax;
+        /// <summary>A vector with only a y and z value (x is 0), that expresses a planar (Y-Z) positioning for the camera at it's max height that can then be rotated around the player to produce an arbitrary X-value.</summary>
+        private Vector3 v_RotMax;
         /// <summary>A vector with only a y and z value (x is 0), that expresses a planar (Y-Z) positioning for the camera at it's max height that can then be rotated around the player to produce an arbitrary X-value.</summary>
         public Vector3 V_RotMax => v_RotMax;
 		/// <summary>A vector with only a y and z value (x is 0), that expresses a planar (Y-Z) positioning for the camera at it's min height that can then be rotated around the player to produce an arbitrary X-value.</summary>
@@ -94,7 +100,7 @@ namespace LogansThirdPersonCamera
 			);
 
 			calculatedFollowDistance = Mathf.Lerp(
-				calculatedFollowDistance, MyConfigurations[CurrentConfigIndex].Dist_follow, MyConfigurations[CurrentConfigIndex].Speed_lerpToNewOffsetPositioning * timeDelta
+				calculatedFollowDistance, CachedFollowDist, MyConfigurations[CurrentConfigIndex].Speed_lerpToNewOffsetPositioning * timeDelta
 			);
 
 			v_camOriginAnchorPt_calculated = Vector3.Lerp(
@@ -195,7 +201,7 @@ namespace LogansThirdPersonCamera
 				return;
 			}
 
-			calculatedFollowDistance = MyConfigurations[CurrentConfigIndex].Dist_follow;
+			calculatedFollowDistance = CachedFollowDist;
 			calculatedSideOffset = MyConfigurations[CurrentConfigIndex].sideOffsetAmt;
 			vPos_cameraOrbit_calculated = Vector3.back;
 			v_camOriginAnchorPt_calculated = MyConfigurations[CurrentConfigIndex].OriginAnchorPoint;
@@ -210,6 +216,7 @@ namespace LogansThirdPersonCamera
 		{
 			CurrentConfigIndex = indx;
 
+			CachedFollowDist = MyConfigurations[CurrentConfigIndex].Dist_Follow;
 		}
 
 		protected float CalculateAimPitch()

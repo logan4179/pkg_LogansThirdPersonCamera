@@ -17,8 +17,9 @@ namespace LogansThirdPersonCamera
 		[Tooltip("This will be like the \"origin\" or anchor point, relative to the player, where the camera does it's " +
             "movement/rotation from. Should be close to the clavical bone, and should be set from the inspector")]
         [SerializeField] public Vector3 OriginAnchorPoint = new Vector3(0f, 1.4f, 0f);
-        [Range(0f, 1f)]
-        public float Dist_follow = 0.646f;
+
+        [SerializeField] private float dist_follow = 0.646f;
+        public float Dist_Follow => dist_follow;
 
         [Tooltip("Height from the floor (or player's feet) where the vertical orbiting orbits around."), Range(0, 1f)]
         public float height_orbit = 0.488f;
