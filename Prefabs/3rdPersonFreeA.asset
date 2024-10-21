@@ -10,21 +10,23 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2c39ab7db1957fd41aa5760d4ec56cff, type: 3}
-  m_Name: CamConfigA_zoomed
+  m_Name: 3rdPersonFreeA
   m_EditorClassIdentifier: 
   optionalDescription: 
+  Mode: 2
   Speed_Move: 810
-  Speed_Look: 200
-  speed_lerpToNewOffsetPositioning: 0.06
   OriginAnchorPoint: {x: 0, y: 1.4, z: -0.07}
-  Dist_follow: 0.377
+  dist_follow: 2.98
   height_orbit: 0.488
-  sideOffsetAmt: 0.426
-  AmHandlingIntersections: 0
+  sideOffsetAmt: 0.11
+  AmHandlingIntersections: 1
   IntersectingMask: 0
-  dist_lookInFrontOfPlayer: 5.17
+  dist_lookInFrontOfPlayer: 0
   MaxVertTilt: 0.81
-  MinVertTilt: -0.865
+  MinVertTilt: -0.148
   pullCloserHeight: 0
-  FOVgoal: 53.2
-  Speed_lerpToFOVgoal: 8.86
+  NegateHorizontal: 1
+  NegateVertical: 0
+  FOVgoal: 60
+  Speed_lerpToPositioning: 8
+  Speed_lerpToFOVgoal: 4.36

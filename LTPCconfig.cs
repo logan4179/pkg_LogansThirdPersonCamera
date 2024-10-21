@@ -9,9 +9,11 @@ namespace LogansThirdPersonCamera
     {
         [SerializeField, TextArea(1, 10)] private string optionalDescription;
 
-		[Header("-------------[[ SPEEDS ]]---------------")]
+        public LTPC_CameraMode Mode = LTPC_CameraMode.FreeVerticalFixedHorizontal;
+
+        [Header("-------------[[ SPEEDS ]]---------------")]
 		public float Speed_Move = 810f;
-        public float Speed_Look = 200f;
+        //public float Speed_Look = 200f;
 
 		[Header("-------------[[ POSITIONAL ]]---------------")]
 		[Tooltip("This will be like the \"origin\" or anchor point, relative to the player, where the camera does it's " +
@@ -42,7 +44,10 @@ namespace LogansThirdPersonCamera
         /// <summary>Vertical (Y) position at which the camera should draw closer if it goes below.</summary>
         [Tooltip("Vertical (Y) position at which the camera should draw closer if it goes below.")]
         public float pullCloserHeight = 0f;
-
+        [Tooltip("Reverses the direction of the horizontal axis input given to the camera's UpdateCamera() method, if for some reason, you don't want to supply a negated value to the camera through your script.")]
+        public bool NegateHorizontal = false;
+        [Tooltip("Reverses the direction of the vertical axis input given to the camera's UpdateCamera() method, if for some reason, you don't want to supply a negated value to the camera through your script.")]
+        public bool NegateVertical = false;
 
 		[Header("-------------[[ FOV ]]---------------")]
 		[Tooltip("Field of View goal for this config")]
@@ -50,7 +55,7 @@ namespace LogansThirdPersonCamera
 
 
 		[Header("--------[[ SWITCHING-TO ]]--------")]
-		public float Speed_lerpToNewOffsetPositioning = 6.6f;
+		public float Speed_lerpToPositioning = 6.6f;
 		[Tooltip("Speed at which to lerp the camera's FOV when going into aim mode.")]
 		public float Speed_lerpToFOVgoal = 5.1f;
 

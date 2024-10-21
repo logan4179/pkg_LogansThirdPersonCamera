@@ -7,7 +7,7 @@ namespace LogansThirdPersonCamera
 	{
 		[Header("--------------[[ CONFIGS ]]----------------")]
 		public LTPCconfig[] MyConfigurations;
-		[HideInInspector] public int CurrentConfigIndex = 0;
+		public int CurrentConfigIndex = 0;
 
 		//[Header("---------------[[ REFERENCE (INTERNAL) ]]-----------------")]
 		private Transform _trans;
@@ -23,27 +23,35 @@ namespace LogansThirdPersonCamera
 		/// </summary>
 		public float CachedFollowDist = 1f;
 
+		/// <summary> Either 1 or -1; cached based on whether NegateHorizontal is true.</summary>
+        int hPolarity = 1;
+        /// <summary> Either 1 or -1; cached based on whether NegateVertical is true.</summary>
+        int vPolarity = 1;
 
         //[Header("CALCULATED VALUES-----------------------")]
         /// <summary>A vector with only a y and z value (x is 0), that expresses a planar (Y-Z) positioning for the camera at it's max height that can then be rotated around the player to produce an arbitrary X-value.</summary>
         private Vector3 v_RotMax;
         /// <summary>A vector with only a y and z value (x is 0), that expresses a planar (Y-Z) positioning for the camera at it's max height that can then be rotated around the player to produce an arbitrary X-value.</summary>
-        public Vector3 V_RotMax => v_RotMax;
-		/// <summary>A vector with only a y and z value (x is 0), that expresses a planar (Y-Z) positioning for the camera at it's min height that can then be rotated around the player to produce an arbitrary X-value.</summary>
-		private Vector3 v_RotMin;
+        private Vector3 v_rotMax_flat_cached;
+
         /// <summary>A vector with only a y and z value (x is 0), that expresses a planar (Y-Z) positioning for the camera at it's min height that can then be rotated around the player to produce an arbitrary X-value.</summary>
-        public Vector3 V_RotMin => v_RotMin;
+        private Vector3 v_RotMin;
+		private Vector3 v_rotMin_flat_cached;
 
         /// <summary>Because this value gets lerped when changing configs, this holds the calculated (lerped) value.</summary>
         private float calculatedSideOffset;
 		/// <summary>Because this value gets lerped when changing configs, this holds the calculated (lerped) value.</summary>
 		private float calculatedFollowDistance = 0f;
 		/// <summary>This vector gets orbited to describe the correct rotational orbit that the camera should have. Gets added on top of the player's position and the 'origin anchor' vector.</summary>
-		protected Vector3 vPos_cameraOrbit_calculated = Vector3.back;
+		public Vector3 vPos_cameraOrbit_calculated = Vector3.back;
 
 		protected Vector3 v_camOriginAnchorPt_calculated = Vector3.zero;
 
 		private float calculatedDistToLookInFrontOfPlayer = 0f;
+
+		//[Header("FLAGS-----------------------")]
+		/// <summary>Tells whether camera is currently transitioning to new configuration positioning/orientation.</summary>
+		public bool flag_configChangeIsDirty = false;
 
 
         [Header("-------------[[ DEBUG ]]---------------")]
@@ -55,6 +63,8 @@ namespace LogansThirdPersonCamera
 			v_RotMax = new Vector3(
 				0f, MyConfigurations[CurrentConfigIndex].MaxVertTilt, -Mathf.Sqrt(Mathf.Pow(1, 2f) - Mathf.Pow(MyConfigurations[CurrentConfigIndex].MaxVertTilt, 2f))
 			);
+
+			v_rotMax_flat_cached = LTPC_Utils.FlatVect( v_RotMax );
 		}
 
 		/// <summary>Uses the pythagorean theorem to recalculate the vRotMin vector. Mainly gets called indirectly through the property 'Prop_MinVertTilt', which itself gets called indirectly when the designer changes it's value in the inspector via the camera's inspector script.</summary>
@@ -63,6 +73,8 @@ namespace LogansThirdPersonCamera
 			v_RotMin = new Vector3(
 				0f, MyConfigurations[CurrentConfigIndex].MinVertTilt, -Mathf.Sqrt(Mathf.Pow(1, 2f) - Mathf.Pow(MyConfigurations[CurrentConfigIndex].MinVertTilt, 2f))
 			);
+
+			v_rotMin_flat_cached = LTPC_Utils.FlatVect( v_RotMin );
 		}
 
 		void Awake()
@@ -75,7 +87,7 @@ namespace LogansThirdPersonCamera
 		{
 			CheckIfKosher();
 
-			InitializeCameraValues();
+			ChangeConfiguration( 0 ); // Default config
 
 			if( FollowTransform != null )
 			{
@@ -83,51 +95,140 @@ namespace LogansThirdPersonCamera
 			}
 		}
 
-		/// <summary>
-		/// Typically you would call this in the LateUpdate after the player it is attached to is finished moving.
-		/// </summary>
-		/// <param name="hAxis"></param>
-		/// <param name="vAxis"></param>
-		public void UpdateCamera( float hAxis, float vAxis, float timeDelta )
+		//public bool CaseOne, CaseTwo, CaseThree, CaseFour, CaseFive, CaseSix = false;
+
+        public void LateUpdate()
+        {
+          if ( flag_configChangeIsDirty ) //In the midst of lerping to new config values...
+			{
+				flag_configChangeIsDirty = false; //reset check...
+                /*CaseOne = false;
+				CaseTwo = false;
+				CaseThree = false;
+				CaseFour = false;
+				CaseFive = false;
+                CaseSix = false;*/
+
+                if ( _cam.fieldOfView != MyConfigurations[CurrentConfigIndex].FOVgoal )
+				{
+					_cam.fieldOfView = Mathf.Lerp(
+						_cam.fieldOfView, MyConfigurations[CurrentConfigIndex].FOVgoal, MyConfigurations[CurrentConfigIndex].Speed_lerpToFOVgoal * Time.deltaTime
+					);
+
+					flag_configChangeIsDirty = true;
+                    //CaseOne = true;
+                }
+
+                if ( calculatedSideOffset != MyConfigurations[CurrentConfigIndex].sideOffsetAmt )
+                {
+					calculatedSideOffset = LTPC_Utils.Lerp(
+						calculatedSideOffset, MyConfigurations[CurrentConfigIndex].sideOffsetAmt, MyConfigurations[CurrentConfigIndex].Speed_lerpToPositioning * Time.deltaTime
+					);
+
+                    flag_configChangeIsDirty = true;
+                    //CaseTwo = true;
+
+                }
+
+                if ( calculatedFollowDistance != CachedFollowDist )
+                {
+					calculatedFollowDistance = LTPC_Utils.Lerp(
+						calculatedFollowDistance, CachedFollowDist, MyConfigurations[CurrentConfigIndex].Speed_lerpToPositioning * Time.deltaTime
+					);
+
+                    //CaseThree = true;
+
+                    flag_configChangeIsDirty = true;
+                }
+
+                if ( v_camOriginAnchorPt_calculated != MyConfigurations[CurrentConfigIndex].OriginAnchorPoint )
+                {
+					v_camOriginAnchorPt_calculated = LTPC_Utils.Lerp(
+						v_camOriginAnchorPt_calculated, MyConfigurations[CurrentConfigIndex].OriginAnchorPoint, MyConfigurations[CurrentConfigIndex].Speed_lerpToPositioning * Time.deltaTime
+					);
+
+                    //CaseFour = true;
+
+                    flag_configChangeIsDirty = true;
+                }
+
+                if ( calculatedDistToLookInFrontOfPlayer != MyConfigurations[CurrentConfigIndex].dist_lookInFrontOfPlayer )
+                {
+					calculatedDistToLookInFrontOfPlayer = LTPC_Utils.Lerp(
+						calculatedDistToLookInFrontOfPlayer, MyConfigurations[CurrentConfigIndex].dist_lookInFrontOfPlayer, MyConfigurations[CurrentConfigIndex].Speed_lerpToPositioning * Time.deltaTime
+					);
+
+                    //CaseFive = true;
+
+                    flag_configChangeIsDirty = true;
+                }
+
+                if ( MyConfigurations[CurrentConfigIndex].Mode == LTPC_CameraMode.FreeVerticalFixedHorizontal && vPos_cameraOrbit_calculated.x != 0f )
+                {
+					vPos_cameraOrbit_calculated = LTPC_Utils.Lerp(
+						vPos_cameraOrbit_calculated, Vector3.back, MyConfigurations[CurrentConfigIndex].Speed_lerpToPositioning * Time.deltaTime
+					);
+
+                    //CaseSix = true;
+
+                    flag_configChangeIsDirty = true;
+                }
+            }  
+        }
+
+        /// <summary>
+        /// Typically you would call this in the LateUpdate after the player it is attached to is finished moving.
+        /// </summary>
+        /// <param name="hAxis"></param>
+        /// <param name="vAxis"></param>
+        public void UpdateCamera( float hAxis, float vAxis, float timeDelta )
 		{
-			#region Calculate Lerped FOV ------------------------
-			_cam.fieldOfView = Mathf.Lerp(
-				_cam.fieldOfView, MyConfigurations[CurrentConfigIndex].FOVgoal, MyConfigurations[CurrentConfigIndex].Speed_lerpToFOVgoal * timeDelta
-			);
+			
 
-			calculatedSideOffset = Mathf.Lerp(
-				calculatedSideOffset, MyConfigurations[CurrentConfigIndex].sideOffsetAmt, MyConfigurations[CurrentConfigIndex].Speed_lerpToNewOffsetPositioning * timeDelta
-			);
-
-			calculatedFollowDistance = Mathf.Lerp(
-				calculatedFollowDistance, CachedFollowDist, MyConfigurations[CurrentConfigIndex].Speed_lerpToNewOffsetPositioning * timeDelta
-			);
-
-			v_camOriginAnchorPt_calculated = Vector3.Lerp(
-				v_camOriginAnchorPt_calculated, MyConfigurations[CurrentConfigIndex].OriginAnchorPoint, MyConfigurations[CurrentConfigIndex].Speed_lerpToNewOffsetPositioning * timeDelta
-			);
-
-			calculatedDistToLookInFrontOfPlayer = Mathf.Lerp(
-				calculatedDistToLookInFrontOfPlayer, MyConfigurations[CurrentConfigIndex].dist_lookInFrontOfPlayer, MyConfigurations[CurrentConfigIndex].Speed_lerpToFOVgoal * timeDelta
-			);
-			#endregion
-
-			// ORBIT THE TARGET VECTOR ------------------///////////////////////
-			if ( Mathf.Abs(hAxis) > 0f || Mathf.Abs(vAxis) > 0f )
+            if ( MyConfigurations[CurrentConfigIndex].Mode == LTPC_CameraMode.Fixed )
 			{
-				//Vertical orbiting -----------------
-				vPos_cameraOrbit_calculated = Quaternion.AngleAxis( -vAxis, Vector3.right ) * vPos_cameraOrbit_calculated;
-			}
 
-			// CORRECT THE TARGET VECTOR VERTICALLY... Note: the reason this isn't encapsulated in the above if-check is because the recoil mechanism also changes this vector
-			if ( vPos_cameraOrbit_calculated.y > MyConfigurations[CurrentConfigIndex].MaxVertTilt )
-			{
-				vPos_cameraOrbit_calculated = v_RotMax;
 			}
-			else if ( vPos_cameraOrbit_calculated.y < MyConfigurations[CurrentConfigIndex].MinVertTilt )
+			else if( MyConfigurations[CurrentConfigIndex].Mode == LTPC_CameraMode.FreeVerticalFixedHorizontal )
 			{
-				vPos_cameraOrbit_calculated = v_RotMin;
-			}
+                if ( Mathf.Abs(vAxis) > 0f ) //Vertical orbiting -----------------
+				{
+                    vPos_cameraOrbit_calculated = Quaternion.AngleAxis(vAxis * vPolarity, Vector3.right) * vPos_cameraOrbit_calculated;
+				}
+
+                // CORRECT THE TARGET VECTOR VERTICALLY... Note: the reason this isn't encapsulated in the above if-check is because the recoil mechanism also changes this vector
+                if ( vPos_cameraOrbit_calculated.y > MyConfigurations[CurrentConfigIndex].MaxVertTilt )
+                {
+                    vPos_cameraOrbit_calculated = v_RotMax;
+                }
+                else if ( vPos_cameraOrbit_calculated.y < MyConfigurations[CurrentConfigIndex].MinVertTilt )
+                {
+                    vPos_cameraOrbit_calculated = v_RotMin;
+                }
+            }
+			else if( MyConfigurations[CurrentConfigIndex].Mode == LTPC_CameraMode.FreeOrbit )
+			{
+                if ( Mathf.Abs(hAxis) > 0f ) //Horizontal orbiting -----------------
+                {
+                    vPos_cameraOrbit_calculated = Quaternion.AngleAxis( hAxis * hPolarity, Vector3.up ) * vPos_cameraOrbit_calculated;
+                }
+
+                if ( Mathf.Abs(vAxis) > 0f ) //Vertical orbiting -----------------
+                {
+                    vPos_cameraOrbit_calculated = Quaternion.AngleAxis( vAxis * vPolarity, Vector3.Cross(LTPC_Utils.FlatVect(vPos_cameraOrbit_calculated), Vector3.up) ) * vPos_cameraOrbit_calculated;
+                }
+
+                // CORRECT THE TARGET VECTOR VERTICALLY... Note: the reason this isn't encapsulated in the above if-check is because the recoil mechanism also changes this vector
+                if ( vPos_cameraOrbit_calculated.y > MyConfigurations[CurrentConfigIndex].MaxVertTilt )
+                {
+                    vPos_cameraOrbit_calculated = Quaternion.FromToRotation(v_rotMax_flat_cached, LTPC_Utils.FlatVect(vPos_cameraOrbit_calculated)) * v_RotMax;
+                }
+                else if ( vPos_cameraOrbit_calculated.y < MyConfigurations[CurrentConfigIndex].MinVertTilt )
+                {
+                    vPos_cameraOrbit_calculated = Quaternion.FromToRotation(v_rotMin_flat_cached, LTPC_Utils.FlatVect(vPos_cameraOrbit_calculated)) * v_RotMin;
+
+                }
+            }
 
 			_trans.position = Vector3.Lerp( _trans.position, CalculatedCameraPositionGoal(), MyConfigurations[CurrentConfigIndex].Speed_Move * timeDelta );
 			_trans.LookAt( CalculatedLookGoal() );
@@ -138,13 +239,25 @@ namespace LogansThirdPersonCamera
 		protected Vector3 CalculatedCameraPositionGoal()
 		{
 			Vector3 vOrigin = FollowTransform.TransformPoint( v_camOriginAnchorPt_calculated );
+			Vector3 calculatedGoal = Vector3.zero;
 
-			Vector3 calculatedGoal = FollowTransform.TransformPoint(
-				v_camOriginAnchorPt_calculated +
-				(vPos_cameraOrbit_calculated.normalized * calculatedFollowDistance) +
-				(Vector3.right * calculatedSideOffset) +
-				(Vector3.Cross(Vector3.right, vPos_cameraOrbit_calculated).normalized * MyConfigurations[CurrentConfigIndex].height_orbit)
-			);
+			if ( MyConfigurations[CurrentConfigIndex].Mode == LTPC_CameraMode.FreeVerticalFixedHorizontal )
+			{
+				calculatedGoal = FollowTransform.TransformPoint(
+					v_camOriginAnchorPt_calculated +
+					(vPos_cameraOrbit_calculated.normalized * calculatedFollowDistance) +
+					(Vector3.right * calculatedSideOffset) +
+					(Vector3.Cross(Vector3.right, vPos_cameraOrbit_calculated).normalized * MyConfigurations[CurrentConfigIndex].height_orbit)
+				);
+			}
+			else if( MyConfigurations[CurrentConfigIndex].Mode == LTPC_CameraMode.FreeOrbit )
+			{
+                calculatedGoal = FollowTransform.TransformPoint(
+					v_camOriginAnchorPt_calculated /*+
+					(Vector3.right * calculatedSideOffset) +
+					(Vector3.Cross(Vector3.right, vPos_cameraOrbit_calculated).normalized * MyConfigurations[CurrentConfigIndex].height_orbit)*/
+				) + (vPos_cameraOrbit_calculated.normalized * calculatedFollowDistance);
+            }
 
 			if( MyConfigurations[CurrentConfigIndex].AmHandlingIntersections )
 			{
@@ -178,17 +291,7 @@ namespace LogansThirdPersonCamera
 				v_camOriginAnchorPt_calculated +
 				(-vPos_cameraOrbit_calculated.normalized * calculatedDistToLookInFrontOfPlayer)
 			);
-		}
-
-		/// <summary>
-		/// Calculates values such as such as the max/min rotational values based on the settings.
-		/// </summary>
-		[ContextMenu("call InitializeCamera()")]
-		public void InitializeCameraValues()
-		{
-			Update_vRotMax();
-			Update_vRotMin();
-		}
+        }
 
 		/// <summary>
 		/// Places camera at default start location and rotation. Only call this when you have the followTransform set.
@@ -212,11 +315,24 @@ namespace LogansThirdPersonCamera
 		}
 
 
-		public void ChangeConfiguration( int indx )
+		public void ChangeConfiguration( int indx, bool lerpToNewConfig = true )
 		{
+			print($"ChangeConfiguration('{indx}')");
 			CurrentConfigIndex = indx;
+            hPolarity = MyConfigurations[CurrentConfigIndex].NegateHorizontal ? -1 : 1;
+            vPolarity = MyConfigurations[CurrentConfigIndex].NegateVertical ? -1 : 1;
 
-			CachedFollowDist = MyConfigurations[CurrentConfigIndex].Dist_Follow;
+            CachedFollowDist = MyConfigurations[CurrentConfigIndex].Dist_Follow;
+
+			Update_vRotMin();
+			Update_vRotMax();
+
+			if( !lerpToNewConfig )
+			{
+				PlaceCameraAtDefaultPositionAndOrientation();
+			}
+
+			flag_configChangeIsDirty = lerpToNewConfig;
 		}
 
 		protected float CalculateAimPitch()
