@@ -21,7 +21,18 @@ namespace LogansThirdPersonCamera
 		/// <summary>
 		/// The distance that the camera should follow away from the target. The camera sets this to the current configuration's follow distance on Start(), but you can use this to change the follow distance after start().
 		/// </summary>
-		public float CachedFollowDist = 1f;
+		private float cachedFollowDist = 1f;
+        /// <summary>
+        /// The distance that the camera should follow away from the target. The camera sets this to the current configuration's follow distance on Start(), but you can use this to change the follow distance after start().
+        /// </summary>
+        public float CachedFollowDistance
+		{
+			set
+			{
+				cachedFollowDist = value;
+				flag_configChangeIsDirty = true;
+			}
+		}
 
 		/// <summary> Either 1 or -1; cached based on whether NegateHorizontal is true.</summary>
         int hPolarity = 1;
@@ -130,10 +141,10 @@ namespace LogansThirdPersonCamera
 
                 }
 
-                if ( calculatedFollowDistance != CachedFollowDist )
+                if ( calculatedFollowDistance != cachedFollowDist )
                 {
 					calculatedFollowDistance = LTPC_Utils.Lerp(
-						calculatedFollowDistance, CachedFollowDist, MyConfigurations[CurrentConfigIndex].Speed_lerpToPositioning * Time.deltaTime
+						calculatedFollowDistance, cachedFollowDist, MyConfigurations[CurrentConfigIndex].Speed_lerpToPositioning * Time.deltaTime
 					);
 
                     //CaseThree = true;
@@ -304,7 +315,7 @@ namespace LogansThirdPersonCamera
 				return;
 			}
 
-			calculatedFollowDistance = CachedFollowDist;
+			calculatedFollowDistance = cachedFollowDist;
 			calculatedSideOffset = MyConfigurations[CurrentConfigIndex].sideOffsetAmt;
 			vPos_cameraOrbit_calculated = Vector3.back;
 			v_camOriginAnchorPt_calculated = MyConfigurations[CurrentConfigIndex].OriginAnchorPoint;
@@ -322,7 +333,7 @@ namespace LogansThirdPersonCamera
             hPolarity = MyConfigurations[CurrentConfigIndex].NegateHorizontal ? -1 : 1;
             vPolarity = MyConfigurations[CurrentConfigIndex].NegateVertical ? -1 : 1;
 
-            CachedFollowDist = MyConfigurations[CurrentConfigIndex].Dist_Follow;
+            cachedFollowDist = MyConfigurations[CurrentConfigIndex].Dist_Follow;
 
 			Update_vRotMin();
 			Update_vRotMax();
