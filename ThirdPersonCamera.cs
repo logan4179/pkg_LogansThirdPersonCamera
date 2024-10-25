@@ -1,4 +1,5 @@
-﻿using UnityEditor;
+﻿using JetBrains.Annotations;
+using UnityEditor;
 using UnityEngine;
 
 namespace LogansThirdPersonCamera
@@ -8,6 +9,7 @@ namespace LogansThirdPersonCamera
 		[Header("--------------[[ CONFIGS ]]----------------")]
 		public LTPCconfig[] MyConfigurations;
 		public int CurrentConfigIndex = 0;
+		public LTPCconfig CurrentConfig => MyConfigurations[CurrentConfigIndex];
 
 		//[Header("---------------[[ REFERENCE (INTERNAL) ]]-----------------")]
 		private Transform _trans;
@@ -110,7 +112,7 @@ namespace LogansThirdPersonCamera
 
         public void LateUpdate()
         {
-          if ( flag_configChangeIsDirty ) //In the midst of lerping to new config values...
+			if ( flag_configChangeIsDirty ) //In the midst of lerping to new config values...
 			{
 				flag_configChangeIsDirty = false; //reset check...
                 /*CaseOne = false;
@@ -184,27 +186,28 @@ namespace LogansThirdPersonCamera
 
                     flag_configChangeIsDirty = true;
                 }
-            }  
+            }
         }
 
-        /// <summary>
-        /// Typically you would call this in the LateUpdate after the player it is attached to is finished moving.
-        /// </summary>
-        /// <param name="hAxis"></param>
-        /// <param name="vAxis"></param>
-        public void UpdateCamera( float hAxis, float vAxis, float timeDelta )
+		/// <summary>
+		/// Typically you would call this in the LateUpdate after the transform this camera is attached to is finished moving.
+		/// </summary>
+		/// <param name="hDegrees">How many degrees to horizontally orbit the camera around the perspective transform</param>
+		/// <param name="vDegrees">How many degrees to vertically orbit the camera around the perspective transform</param>
+		/// <param name="timeDelta">Allows you to pass in either time.deltaTime or time.fixedDeltaTime</param>
+		public void UpdateCamera( float hDegrees, float vDegrees, float timeDelta )
 		{
-			
-
             if ( MyConfigurations[CurrentConfigIndex].Mode == LTPC_CameraMode.Fixed )
 			{
 
 			}
 			else if( MyConfigurations[CurrentConfigIndex].Mode == LTPC_CameraMode.FreeVerticalFixedHorizontal )
 			{
-                if ( Mathf.Abs(vAxis) > 0f ) //Vertical orbiting -----------------
+                if ( Mathf.Abs(vDegrees) > 0f ) //Vertical orbiting -----------------
 				{
-                    vPos_cameraOrbit_calculated = Quaternion.AngleAxis(vAxis * vPolarity, Vector3.right) * vPos_cameraOrbit_calculated;
+                    vPos_cameraOrbit_calculated = Quaternion.AngleAxis( 
+						vDegrees * vPolarity * MyConfigurations[CurrentConfigIndex].Speed_Look, Vector3.right 
+					) * vPos_cameraOrbit_calculated;
 				}
 
                 // CORRECT THE TARGET VECTOR VERTICALLY... Note: the reason this isn't encapsulated in the above if-check is because the recoil mechanism also changes this vector
@@ -219,14 +222,18 @@ namespace LogansThirdPersonCamera
             }
 			else if( MyConfigurations[CurrentConfigIndex].Mode == LTPC_CameraMode.FreeOrbit )
 			{
-                if ( Mathf.Abs(hAxis) > 0f ) //Horizontal orbiting -----------------
+                if ( Mathf.Abs(hDegrees) > 0f ) //Horizontal orbiting -----------------
                 {
-                    vPos_cameraOrbit_calculated = Quaternion.AngleAxis( hAxis * hPolarity, Vector3.up ) * vPos_cameraOrbit_calculated;
+                    vPos_cameraOrbit_calculated = Quaternion.AngleAxis( 
+						hDegrees * hPolarity * MyConfigurations[CurrentConfigIndex].Speed_Look, Vector3.up 
+					) * vPos_cameraOrbit_calculated;
                 }
 
-                if ( Mathf.Abs(vAxis) > 0f ) //Vertical orbiting -----------------
+                if ( Mathf.Abs(vDegrees) > 0f ) //Vertical orbiting -----------------
                 {
-                    vPos_cameraOrbit_calculated = Quaternion.AngleAxis( vAxis * vPolarity, Vector3.Cross(LTPC_Utils.FlatVect(vPos_cameraOrbit_calculated), Vector3.up) ) * vPos_cameraOrbit_calculated;
+                    vPos_cameraOrbit_calculated = Quaternion.AngleAxis( 
+						vDegrees * vPolarity * MyConfigurations[CurrentConfigIndex].Speed_Look, Vector3.Cross(LTPC_Utils.FlatVect(vPos_cameraOrbit_calculated), Vector3.up) 
+					) * vPos_cameraOrbit_calculated;
                 }
 
                 // CORRECT THE TARGET VECTOR VERTICALLY... Note: the reason this isn't encapsulated in the above if-check is because the recoil mechanism also changes this vector
@@ -237,19 +244,20 @@ namespace LogansThirdPersonCamera
                 else if ( vPos_cameraOrbit_calculated.y < MyConfigurations[CurrentConfigIndex].MinVertTilt )
                 {
                     vPos_cameraOrbit_calculated = Quaternion.FromToRotation(v_rotMin_flat_cached, LTPC_Utils.FlatVect(vPos_cameraOrbit_calculated)) * v_RotMin;
-
                 }
             }
 
 			_trans.position = Vector3.Lerp( _trans.position, CalculatedCameraPositionGoal(), MyConfigurations[CurrentConfigIndex].Speed_Move * timeDelta );
 			_trans.LookAt( CalculatedLookGoal() );
+			//_trans.LookAt( FollowTransform.position + (Vector3.up * 1.5f) );
+
 		}
 
 		/// <summary>Efficiency boolean that tells our script if the last frame had clipping or not./summary>
-		bool intersectedOnLastFrame;
+		bool flag_intersectedOnLastFrame;
+
 		protected Vector3 CalculatedCameraPositionGoal()
 		{
-			Vector3 vOrigin = FollowTransform.TransformPoint( v_camOriginAnchorPt_calculated );
 			Vector3 calculatedGoal = Vector3.zero;
 
 			if ( MyConfigurations[CurrentConfigIndex].Mode == LTPC_CameraMode.FreeVerticalFixedHorizontal )
@@ -272,6 +280,8 @@ namespace LogansThirdPersonCamera
 
 			if( MyConfigurations[CurrentConfigIndex].AmHandlingIntersections )
 			{
+				Vector3 vOrigin = FollowTransform.TransformPoint( v_camOriginAnchorPt_calculated );
+
 				RaycastHit hitInfo = new RaycastHit();
 				float clipValue = -1f;
 				if ( Physics.Linecast(vOrigin, calculatedGoal, out hitInfo, MyConfigurations[CurrentConfigIndex].IntersectingMask) )
@@ -280,15 +290,15 @@ namespace LogansThirdPersonCamera
 
 					clipValue = Mathf.Lerp(0.15f, 0.3f, (calculatedGoal - vOrigin).magnitude / 0.86728f);
 					_cam.nearClipPlane = clipValue;
-					intersectedOnLastFrame = true;
+					flag_intersectedOnLastFrame = true;
 				}
 				else //If there's no clipping this frame...
 				{
-					if (intersectedOnLastFrame) //...and there was clipping last frame - therefore a change in state has occurred...
+					if (flag_intersectedOnLastFrame) //...and there was clipping last frame - therefore a change in state has occurred...
 					{
 						_cam.nearClipPlane = 0.3f;
 					}
-					intersectedOnLastFrame = false;
+					flag_intersectedOnLastFrame = false;
 				}
 			}
 
@@ -298,12 +308,15 @@ namespace LogansThirdPersonCamera
 
 		protected Vector3 CalculatedLookGoal()
 		{
+			Vector3 vector = Vector3.zero;
+
 			return FollowTransform.TransformPoint(
 				v_camOriginAnchorPt_calculated +
 				(-vPos_cameraOrbit_calculated.normalized * calculatedDistToLookInFrontOfPlayer)
 			);
-        }
+		}
 
+		[ContextMenu("z call PlaceCameraAtDefaultPositionAndOrientation()")]
 		/// <summary>
 		/// Places camera at default start location and rotation. Only call this when you have the followTransform set.
 		/// </summary>
