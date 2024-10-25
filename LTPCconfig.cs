@@ -13,7 +13,6 @@ namespace LogansThirdPersonCamera
 
         [Header("-------------[[ SPEEDS ]]---------------")]
 		public float Speed_Move = 810f;
-        public float Speed_Look = 1;
 
 		[Header("-------------[[ POSITIONAL ]]---------------")]
 		[Tooltip("This will be like the \"origin\" or anchor point, relative to the player, where the camera does it's " +

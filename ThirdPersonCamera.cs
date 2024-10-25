@@ -206,7 +206,7 @@ namespace LogansThirdPersonCamera
                 if ( Mathf.Abs(vDegrees) > 0f ) //Vertical orbiting -----------------
 				{
                     vPos_cameraOrbit_calculated = Quaternion.AngleAxis( 
-						vDegrees * vPolarity * MyConfigurations[CurrentConfigIndex].Speed_Look, Vector3.right 
+						vDegrees * vPolarity, Vector3.right 
 					) * vPos_cameraOrbit_calculated;
 				}
 
@@ -225,14 +225,14 @@ namespace LogansThirdPersonCamera
                 if ( Mathf.Abs(hDegrees) > 0f ) //Horizontal orbiting -----------------
                 {
                     vPos_cameraOrbit_calculated = Quaternion.AngleAxis( 
-						hDegrees * hPolarity * MyConfigurations[CurrentConfigIndex].Speed_Look, Vector3.up 
+						hDegrees * hPolarity, Vector3.up 
 					) * vPos_cameraOrbit_calculated;
                 }
 
                 if ( Mathf.Abs(vDegrees) > 0f ) //Vertical orbiting -----------------
                 {
                     vPos_cameraOrbit_calculated = Quaternion.AngleAxis( 
-						vDegrees * vPolarity * MyConfigurations[CurrentConfigIndex].Speed_Look, Vector3.Cross(LTPC_Utils.FlatVect(vPos_cameraOrbit_calculated), Vector3.up) 
+						vDegrees * vPolarity, Vector3.Cross(LTPC_Utils.FlatVect(vPos_cameraOrbit_calculated), Vector3.up) 
 					) * vPos_cameraOrbit_calculated;
                 }
 
