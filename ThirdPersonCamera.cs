@@ -108,28 +108,19 @@ namespace LogansThirdPersonCamera
 			}
 		}
 
-		//public bool CaseOne, CaseTwo, CaseThree, CaseFour, CaseFive, CaseSix = false;
-
         public void LateUpdate()
         {
 			if ( flag_configChangeIsDirty ) //In the midst of lerping to new config values...
 			{
 				flag_configChangeIsDirty = false; //reset check...
-                /*CaseOne = false;
-				CaseTwo = false;
-				CaseThree = false;
-				CaseFour = false;
-				CaseFive = false;
-                CaseSix = false;*/
 
                 if ( _cam.fieldOfView != MyConfigurations[CurrentConfigIndex].FOVgoal )
 				{
-					_cam.fieldOfView = Mathf.Lerp(
+					_cam.fieldOfView = LTPC_Utils.Lerp(
 						_cam.fieldOfView, MyConfigurations[CurrentConfigIndex].FOVgoal, MyConfigurations[CurrentConfigIndex].Speed_lerpToFOVgoal * Time.deltaTime
 					);
 
 					flag_configChangeIsDirty = true;
-                    //CaseOne = true;
                 }
 
                 if ( calculatedSideOffset != MyConfigurations[CurrentConfigIndex].sideOffsetAmt )
@@ -139,8 +130,6 @@ namespace LogansThirdPersonCamera
 					);
 
                     flag_configChangeIsDirty = true;
-                    //CaseTwo = true;
-
                 }
 
                 if ( calculatedFollowDistance != cachedFollowDist )
@@ -148,8 +137,6 @@ namespace LogansThirdPersonCamera
 					calculatedFollowDistance = LTPC_Utils.Lerp(
 						calculatedFollowDistance, cachedFollowDist, MyConfigurations[CurrentConfigIndex].Speed_lerpToPositioning * Time.deltaTime
 					);
-
-                    //CaseThree = true;
 
                     flag_configChangeIsDirty = true;
                 }
@@ -160,8 +147,6 @@ namespace LogansThirdPersonCamera
 						v_camOriginAnchorPt_calculated, MyConfigurations[CurrentConfigIndex].OriginAnchorPoint, MyConfigurations[CurrentConfigIndex].Speed_lerpToPositioning * Time.deltaTime
 					);
 
-                    //CaseFour = true;
-
                     flag_configChangeIsDirty = true;
                 }
 
@@ -171,8 +156,6 @@ namespace LogansThirdPersonCamera
 						calculatedDistToLookInFrontOfPlayer, MyConfigurations[CurrentConfigIndex].dist_lookInFrontOfPlayer, MyConfigurations[CurrentConfigIndex].Speed_lerpToPositioning * Time.deltaTime
 					);
 
-                    //CaseFive = true;
-
                     flag_configChangeIsDirty = true;
                 }
 
@@ -181,8 +164,6 @@ namespace LogansThirdPersonCamera
 					vPos_cameraOrbit_calculated = LTPC_Utils.Lerp(
 						vPos_cameraOrbit_calculated, Vector3.back, MyConfigurations[CurrentConfigIndex].Speed_lerpToPositioning * Time.deltaTime
 					);
-
-                    //CaseSix = true;
 
                     flag_configChangeIsDirty = true;
                 }
@@ -341,7 +322,6 @@ namespace LogansThirdPersonCamera
 
 		public void ChangeConfiguration( int indx, bool lerpToNewConfig = true )
 		{
-			print($"ChangeConfiguration('{indx}')");
 			CurrentConfigIndex = indx;
             hPolarity = MyConfigurations[CurrentConfigIndex].NegateHorizontal ? -1 : 1;
             vPolarity = MyConfigurations[CurrentConfigIndex].NegateVertical ? -1 : 1;

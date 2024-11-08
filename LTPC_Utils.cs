@@ -36,6 +36,13 @@ namespace LogansThirdPersonCamera
             return v_return;
         }
 
+        /// <summary>
+        /// This lerp was made to not lerp forever, but snap to its goal when 'close enough'
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <param name="t"></param>
+        /// <returns></returns>
         public static float Lerp( float a, float b, float t )
         {
             float amt = Mathf.Lerp( a, b, t );
@@ -48,7 +55,14 @@ namespace LogansThirdPersonCamera
             return amt;
         }
 
-        public static Vector3 Lerp( Vector3 a, Vector3 b, float t )
+		/// <summary>
+		/// This lerp was made to not lerp forever, but snap to its goal when 'close enough'
+		/// </summary>
+		/// <param name="a"></param>
+		/// <param name="b"></param>
+		/// <param name="t"></param>
+		/// <returns></returns>
+		public static Vector3 Lerp( Vector3 a, Vector3 b, float t )
         {
             Vector3 amt = Vector3.Lerp( a, b, t );
 
